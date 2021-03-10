@@ -16,30 +16,47 @@ class ToggleModulesCommand extends BltTasks {
   /**
    * Enables and uninstalls specified modules.
    *
-   * You may define the environment for which modules should be toggled by
-   * passing the --environment=[value] option to this command, setting the
-   * 'environnment' environment variable, or defining environment in one of your
-   * BLT configuration files.
-   *
-   * @command drupal:toggle:modules
-   *
-   * @aliases dtm toggle setup:toggle-modules
-   *
-   * @validateDrushConfig
+   * @hook replace-command drupal:toggle:modules
    */
   public function toggleModules() {
-    if ($this->getConfig()->has('environment')) {
+    if ($this->input()->hasArgument('environment')) {
+      $environment = $this->input()->getArgument('environment');
+    }
+    elseif ($this->getConfig()->has('environment')) {
       $environment = $this->getConfigValue('environment');
+    }
+    elseif (getenv('environment')) {
+      $environment = getenv('environment');
     }
 
     if (isset($environment)) {
-      // Enable modules.
-      $enable_key = "modules.$environment.enable";
-      $this->doToggleModules('pm-enable', $enable_key);
 
-      // Uninstall modules.
+      $enable_key = "modules.$environment.enable";
       $disable_key = "modules.$environment.uninstall";
-      $this->doToggleModules('pm-uninstall', $disable_key);
+      $enableKey = $this->getConfig()->has($enable_key);
+      $disableKey = $this->getConfig()->has($disable_key);
+
+      if ($enableKey || $disableKey) {
+
+        // Enable modules.
+        $this->doToggleModules('pm-enable', $enable_key);
+
+        // Uninstall modules.
+        $this->doToggleModules('pm-uninstall', $disable_key);
+      }
+      else {
+
+        $defaultEnvironment = preg_replace('/[0-9]+/', '', $environment);
+
+        // Enable modules.
+        $enable_key = "modules.$defaultEnvironment.enable";
+        $this->doToggleModules('pm-enable', $enable_key);
+
+        // Uninstall modules.
+        $disable_key = "modules.$defaultEnvironment.uninstall";
+        $this->doToggleModules('pm-uninstall', $disable_key);
+      }
+
     }
     else {
       $this->say("Environment is unset. Skipping drupal:toggle:modules...");
