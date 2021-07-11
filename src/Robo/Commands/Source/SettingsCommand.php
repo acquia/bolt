@@ -4,6 +4,7 @@ namespace Acquia\Blt\Robo\Commands\Source;
 
 use Acquia\Blt\Robo\BltTasks;
 use Acquia\Blt\Robo\Common\RandomString;
+use Acquia\Blt\Robo\Config\ConfigInitializer;
 use Acquia\Blt\Robo\Exceptions\BltException;
 use Robo\Contract\VerbosityThresholdInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -43,6 +44,13 @@ WARNING;
    */
   public function generateSiteConfigFiles() {
     $this->generateLocalConfigFile();
+
+    // Reload config.
+    $config_initializer = new ConfigInitializer($this->getConfigValue('repo.root'), $this->input());
+    $new_config = $config_initializer->initialize();
+
+    // Replaces config.
+    $this->getConfig()->replace($new_config->export());
 
     // Generate hash file in salt.txt.
     $this->hashSalt();
